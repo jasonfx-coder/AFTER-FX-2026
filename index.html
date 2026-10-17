@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AFTER FX 2026 — Engine Prototype</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#07050d;--p1:#100b1b;--p2:#171128;--tl:#1d1631;--ln:#2e2447;--ac:#a855f7;--ac2:#7c3aed;--cy:#38bdf8;--tx:#f4efff;--mu:#8f84ab;--ok:#4ade80;--warn:#fbbf24;--err:#f87171;color-scheme:dark;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font:500 13px/1.3 "Barlow Semi Condensed",system-ui,sans-serif}
+button,select,input{font:inherit;color:inherit}
+button{background:var(--p2);border:1px solid var(--ln);border-radius:4px;padding:4px 9px;cursor:pointer}
+button:hover{border-color:var(--ac)} button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--cy);outline-offset:1px}
+button.on{background:var(--ac2);border-color:var(--ac)} button:disabled{opacity:.4;cursor:not-allowed}
+input,select{background:var(--bg);border:1px solid var(--ln);border-radius:4px;padding:3px 6px}
+#app{display:grid;grid-template-rows:40px minmax(0,1fr) 230px;height:100%}
+#top{display:flex;align-items:center;gap:6px;padding:0 8px;background:var(--p1);border-bottom:1px solid var(--ln);overflow-x:auto;white-space:nowrap}
+#top .brand{font-weight:600;letter-spacing:.04em;color:var(--ac);margin-right:6px}
+.save{font-size:12px;color:var(--mu)} .save.dirty{color:var(--warn)} .save.ok{color:var(--ok)}
+.sp{flex:1}
+#mid{display:grid;grid-template-columns:minmax(0,1fr) 290px;min-height:0}
+#stage{display:flex;flex-direction:column;min-height:0;background:var(--bg)}
+#cv-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px}
+canvas{max-width:100%;max-height:100%;aspect-ratio:16/9;background:#000;border:1px solid var(--ln);touch-action:none}
+#tc{display:flex;gap:6px;align-items:center;padding:4px 8px;background:var(--p1);border-top:1px solid var(--ln)}
+.mono{font-family:"JetBrains Mono",monospace;font-size:12px}
+#side{background:var(--p1);border-left:1px solid var(--ln);display:flex;flex-direction:column;min-height:0}
+#tabs{display:flex;border-bottom:1px solid var(--ln)} #tabs button{flex:1;border:0;border-radius:0;background:none;color:var(--mu)} #tabs button.on{color:var(--tx);box-shadow:inset 0 -2px var(--ac);background:none}
+#sidebody{overflow:auto;padding:8px;flex:1}
+.pr{display:grid;grid-template-columns:26px 1fr 74px 26px 26px;gap:4px;align-items:center;margin-bottom:5px}
+.pr label{cursor:pointer;color:var(--mu)} .pr.sel label{color:var(--tx)} .pr input{width:74px}
+.pr button{padding:2px 0;text-align:center}
+.h{color:var(--mu);margin:10px 0 6px;font-size:12px}
+.note{color:var(--mu);font-size:12px;border-top:1px solid var(--ln);margin-top:10px;padding-top:8px}
+#tlbar{display:flex;gap:6px;align-items:center;padding:4px 8px;background:var(--p1);border-top:1px solid var(--ln)}
+#tlwrap{display:grid;grid-template-rows:auto minmax(0,1fr);background:var(--tl);min-height:0}
+#tl{overflow:auto;position:relative;min-height:0}
+#inner{position:relative}
+.row{display:flex;height:34px;border-bottom:1px solid var(--ln)}
+.row.ruler{height:22px;position:sticky;top:0;z-index:4;background:var(--p1)}
+.head{position:sticky;left:0;z-index:3;width:120px;flex:none;background:var(--p1);border-right:1px solid var(--ln);display:flex;align-items:center;gap:4px;padding:0 6px;overflow:hidden}
+.head.sel{box-shadow:inset 3px 0 var(--cy)}
+.head span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.head button{padding:0 4px;border:0;background:none;color:var(--mu)} .head button.off{color:var(--err)}
+.lane{position:relative;flex:none}
+.tick{position:absolute;top:0;bottom:0;border-left:1px solid var(--ln);padding-left:3px;color:var(--mu);font-size:10px;pointer-events:none}
+.clip{position:absolute;top:4px;height:22px;border-radius:3px;padding:2px 8px;overflow:hidden;white-space:nowrap;font-size:12px;border:1px solid rgba(255,255,255,.25);cursor:grab;touch-action:none}
+.clip.sel{outline:2px solid var(--cy)} .clip.locked{opacity:.55;cursor:not-allowed}
+.kf{position:absolute;bottom:1px;width:9px;height:9px;margin-left:-4px;background:var(--warn);transform:rotate(45deg);border:1px solid #000;cursor:ew-resize;z-index:2;touch-action:none}
+.kf.sel{background:var(--cy)}
+#ph{position:absolute;top:0;bottom:0;width:2px;background:var(--cy);z-index:5;pointer-events:none}
+#ph::before{content:"";position:absolute;top:0;left:-5px;border:6px solid transparent;border-top-color:var(--cy)}
+#graph{width:100%;height:210px;background:var(--bg);border:1px solid var(--ln);touch-action:none}
+@media(max-width:760px){#app{grid-template-rows:40px minmax(0,1fr) 230px;overflow:auto}#mid{grid-template-columns:1fr;grid-template-rows:minmax(160px,1fr) 240px}#side{border-left:0;border-top:1px solid var(--ln)}}
+</style><style>
+/* Alight-style layout: preview, timeline, bottom tool bar, sheet for properties */
+button{background:transparent;border:1.5px solid var(--ac);border-radius:8px;padding:5px 11px}
+button:hover{background:rgba(168,85,247,.15)} button.on{background:var(--ac2)}
+#app{grid-template-rows:46px minmax(0,1fr) 240px 60px;overflow:hidden}
+#top{gap:8px;padding:0 10px} #top .brand{font-size:12px;letter-spacing:.06em}
+#top #back{font-size:20px;padding:0 10px;line-height:30px}
+#tools{display:flex;gap:8px;padding:8px;background:var(--p1);border-top:1px solid var(--ln)}
+#tools button{flex:1;min-height:42px;font-weight:600}
+#side{position:fixed;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom,0px));height:48%;z-index:20;border:1.5px solid var(--ac);border-bottom:0;border-radius:14px 14px 0 0;display:none}
+#side.open{display:flex} #tabs button{border:0;border-radius:0}
+.clip{border:1.5px solid var(--ac);border-radius:6px} .row{height:38px}
+.pr button,.head button{border-width:1px}
+@media(max-width:760px){#app{grid-template-rows:46px minmax(0,1fr) 240px 60px;overflow:hidden}}
+</style></head><body>
+<div id="app">
+ <div id="top"><button id="back" aria-label="Back">‹</button><span class="brand">AFTER FX</span><b>Untitled comp</b><span id="save" class="save ok">Saved</span><span class="sp"></span><button id="undo" aria-label="Undo">↶</button><button id="redo" aria-label="Redo">↷</button><button id="exp" disabled title="Planned">Export</button></div>
+ <div id="stage"><div id="cv-wrap"><canvas id="cv" width="960" height="540"></canvas></div>
+  <div id="tc"><button id="start">|◀</button><button id="prev">◀</button><button id="play">Play</button><button id="next">▶</button><button id="end">▶|</button><span class="mono" id="time">00:00:00</span><span class="sp"></span><span class="mono" style="color:var(--mu)">1920×1080 · 30fps</span></div></div>
+ <div id="tlwrap"><div id="tlbar"><span style="color:var(--mu)">Zoom</span><input id="zoom" type="range" min="20" max="300" value="90"><button id="fit">Fit</button><span class="sp"></span><span id="status" style="color:var(--mu)"></span></div><div id="tl"><div id="inner"></div></div></div>
+ <div id="tools"><button id="tEdit">Edit</button><button id="tGraph">Graph</button><button id="split">Split</button><button id="dup">Duplicate</button><button id="del">Delete</button></div>
+ <div id="side"><div id="tabs"><button id="tp" class="on">Properties</button><button id="tg">Graph</button></div><div id="sidebody"></div></div>
+</div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s), FPS=30, FM=1000/FPS, DUR=8000;
+let uid=100; const nid=()=>++uid;
+const P=v=>({v,anim:false,keys:[]});
+const mk=(id,name,type,color,clips,x=960,y=540)=>({id,name,type,color,visible:true,locked:false,clips,props:{x:P(x),y:P(y),sx:P(100),sy:P(100),rot:P(0),op:P(100)}});
+const PL={x:'Position X',y:'Position Y',sx:'Scale X',sy:'Scale Y',rot:'Rotation',op:'Opacity'};
+let S={layers:[
+ mk(1,'Title','TEXT','#c084fc',[{id:11,start:500,dur:5000,src:0}]),
+ mk(2,'Shape 1','SHAPE','#38bdf8',[{id:12,start:0,dur:6000,src:0}],480,300),
+ mk(3,'Video (placeholder)','VIDEO','#7c3aed',[{id:13,start:0,dur:8000,src:0}])],
+ t:0, sel:{layer:1,prop:'x',key:null,clip:null}, playing:false, tab:'p', dirty:false};
+let undo=[],redo=[]; const snap=()=>JSON.stringify(S.layers);
+function begin(){undo.push(snap());redo=[];if(undo.length>100)undo.shift();S.dirty=true;}
+function applySnap(j){S.layers=JSON.parse(j);S.dirty=true;}
+const sn=t=>Math.round(Math.round(t/FM)*FM), clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const L=()=>S.layers.find(l=>l.id===S.sel.layer), PR=()=>L()&&L().props[S.sel.prop];
+
+/* ---- animation evaluator (mirrors Engine.kt) ---- */
+function bez(u,x1,y1,x2,y2){const cx=s=>3*(1-s)**2*s*x1+3*(1-s)*s*s*x2+s**3, cy=s=>3*(1-s)**2*s*y1+3*(1-s)*s*s*y2+s**3;let lo=0,hi=1;for(let i=0;i<40;i++){const m=(lo+hi)/2;cx(m)<u?lo=m:hi=m}return cy((lo+hi)/2)}
+function ev(p,t){const k=p.keys;if(!p.anim||!k.length)return p.v;if(t<=k[0].t)return k[0].v;const z=k[k.length-1];if(t>=z.t)return z.v;
+ let i=0;while(k[i+1].t<=t)i++;const a=k[i],b=k[i+1],u=(t-a.t)/(b.t-a.t);let q;
+ if(a.i==='hold')return a.v;else if(a.i==='linear')q=u;else if(a.i==='smooth')q=u*u*(3-2*u);else q=bez(u,a.ox,a.oy,b.ix,b.iy);
+ return a.v+(b.v-a.v)*q}
+function setKey(p,t,v,i){const old=p.keys.find(k=>k.t===t);const prev=[...p.keys].reverse().find(k=>k.t<t);
+ p.keys=p.keys.filter(k=>k.t!==t);p.keys.push({id:nid(),t,v,i:i||old?.i||prev?.i||'linear',ox:.33,oy:0,ix:.67,iy:1,...(old?{ox:old.ox,oy:old.oy,ix:old.ix,iy:old.iy}:{})});p.keys.sort((a,b)=>a.t-b.t);p.anim=true}
+
+/* ---- preview ---- */
+const cv=$('#cv'),cx=cv.getContext('2d');
+function bounds(l){return l.type==='TEXT'?[360,90]:l.type==='SHAPE'?[200,200]:[640,360]}
+function draw(){cx.fillStyle='#0b0814';cx.fillRect(0,0,960,540);
+ for(const l of [...S.layers].reverse()){if(!l.visible||!l.clips.some(c=>S.t>=c.start&&S.t<c.start+c.dur))continue;
+  const g=n=>ev(l.props[n],S.t);cx.save();cx.translate(g('x')/2,g('y')/2);cx.rotate(g('rot')*Math.PI/180);cx.scale(g('sx')/100,g('sy')/100);cx.globalAlpha=clamp(g('op')/100,0,1);
+  if(l.type==='TEXT'){cx.fillStyle='#f4efff';cx.font='700 64px "Barlow Semi Condensed",sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText('AFTER FX',0,0)}
+  else if(l.type==='SHAPE'){cx.fillStyle='#38bdf8';cx.beginPath();cx.roundRect(-100,-100,200,200,18);cx.fill()}
+  else{const gr=cx.createLinearGradient(-320,-180,320,180);gr.addColorStop(0,'#3b1d7a');gr.addColorStop(1,'#9333ea');cx.fillStyle=gr;cx.fillRect(-320,-180,640,360);cx.fillStyle='rgba(255,255,255,.7)';cx.font='500 18px sans-serif';cx.textAlign='center';cx.fillText('video layer (no decoder in prototype)',0,0)}
+  if(l.id===S.sel.layer){const[w,h]=bounds(l);cx.globalAlpha=1;cx.strokeStyle='#38bdf8';cx.lineWidth=1.5/Math.max(.2,g('sx')/100);cx.strokeRect(-w/2,-h/2,w,h)}
+  cx.restore()}}
+cv.addEventListener('pointerdown',e=>{const l=L();if(!l||l.locked)return;cv.setPointerCapture(e.pointerId);begin();let lx=e.clientX,ly=e.clientY;
+ const mv=ev2=>{const r=cv.getBoundingClientRect(),k=1920/r.width;const dx=(ev2.clientX-lx)*k,dy=(ev2.clientY-ly)*k;lx=ev2.clientX;ly=ev2.clientY;
+  for(const n of['x','y']){const p=l.props[n],v=ev(p,S.t)+(n==='x'?dx:dy);p.anim?setKey(p,sn(S.t),v):p.v=v}renderAll()};
+ const up=()=>{cv.removeEventListener('pointermove',mv);cv.removeEventListener('pointerup',up)};cv.addEventListener('pointermove',mv);cv.addEventListener('pointerup',up)});
+
+/* ---- timeline ---- */
+let ppm=.09; const W=()=>Math.round(DUR*ppm)+40;
+function tcs(t){const f=Math.round(t/FM),s=Math.floor(f/FPS);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')+':'+String(f%FPS).padStart(2,'0')}
+function renderTL(){const el=$('#inner');el.style.width=(120+W())+'px';let h=`<div class="row ruler"><div class="head" style="height:22px"></div><div class="lane" id="ruler" style="width:${W()}px">`;
+ const step=ppm>.15?500:1000;for(let t=0;t<=DUR;t+=step)h+=`<div class="tick" style="left:${t*ppm}px">${t/1000}s</div>`;h+='</div></div>';
+ for(const l of S.layers){const sel=l.id===S.sel.layer;h+=`<div class="row"><div class="head ${sel?'sel':''}" data-l="${l.id}"><span>${l.name}</span><button data-eye="${l.id}" class="${l.visible?'':'off'}" title="Visibility">${l.visible?'●':'○'}</button><button data-lock="${l.id}" class="${l.locked?'off':''}" title="Lock">${l.locked?'🔒':'🔓'}</button></div><div class="lane" style="width:${W()}px">`;
+  for(const c of l.clips)h+=`<div class="clip ${S.sel.clip===c.id?'sel':''} ${l.locked?'locked':''}" data-c="${c.id}" data-l="${l.id}" style="left:${c.start*ppm}px;width:${c.dur*ppm}px;background:${l.color}55">${l.name}</div>`;
+  for(const n in l.props)for(const k of l.props[n].keys)if(l.props[n].anim)h+=`<div class="kf ${S.sel.key===k.id?'sel':''}" data-k="${k.id}" data-l="${l.id}" data-p="${n}" style="left:${k.t*ppm}px" title="${PL[n]}"></div>`;
+  h+='</div></div>'}
+ h+='<div id="ph"></div>';el.innerHTML=h;movePH()}
+function movePH(){const p=$('#ph');if(p)p.style.left=(120+S.t*ppm)+'px';$('#time').textContent=tcs(S.t)}
+function drag(e,onmove,onend){e.preventDefault();const mv=x=>onmove(x),up=x=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);onend&&onend(x)};addEventListener('pointermove',mv);addEventListener('pointerup',up)}
+$('#inner').addEventListener('pointerdown',e=>{const t=e.target;
+ if(t.dataset.eye){begin();const l=S.layers.find(x=>x.id==t.dataset.eye);l.visible=!l.visible;return renderAll()}
+ if(t.dataset.lock){begin();const l=S.layers.find(x=>x.id==t.dataset.lock);l.locked=!l.locked;return renderAll()}
+ if(t.closest('#ruler')){const lane=$('#ruler'),sc=x=>{S.t=sn(clamp((x-lane.getBoundingClientRect().left)/ppm,0,DUR));movePH();draw();if(S.tab==='p')renderSide()};sc(e.clientX);return drag(e,m=>sc(m.clientX))}
+ if(t.dataset.k){const l=S.layers.find(x=>x.id==t.dataset.l),p=l.props[t.dataset.p],id=+t.dataset.k;S.sel={layer:l.id,prop:t.dataset.p,key:id,clip:null};begin();let x0=e.clientX;const k=p.keys.find(k=>k.id===id),t0=k.t;
+  return drag(e,m=>{k.t=clamp(sn(t0+(m.clientX-x0)/ppm),0,DUR);p.keys.sort((a,b)=>a.t-b.t);renderAll()},()=>{p.keys=p.keys.filter(o=>o===k||o.t!==k.t);renderAll()})}
+ if(t.dataset.c){const l=S.layers.find(x=>x.id==t.dataset.l);S.sel.layer=l.id;S.sel.clip=+t.dataset.c;S.sel.key=null;if(l.locked)return renderAll();
+  const c=l.clips.find(c=>c.id===S.sel.clip),r=t.getBoundingClientRect(),m0=e.clientX,s0=c.start,d0=c.dur,sr0=c.src;begin();
+  const mode=e.clientX-r.left<8?'ts':r.right-e.clientX<8?'te':'mv';
+  return drag(e,m=>{const dt=(m.clientX-m0)/ppm;
+   if(mode==='mv')c.start=clamp(sn(s0+dt),0,DUR-c.dur);
+   else if(mode==='ts'){const ns=clamp(sn(s0+dt),s0-sr0,s0+d0-FM);c.src=sr0+(ns-s0);c.dur=d0-(ns-s0);c.start=ns}
+   else c.dur=clamp(sn(d0+dt),FM,DUR-c.start);renderAll()})}
+ if(t.closest('.head')){S.sel.layer=+t.closest('.head').dataset.l;S.sel.clip=null;S.sel.key=null;renderAll()}});
+
+/* ---- side panel ---- */
+function renderSide(){const b=$('#sidebody'),l=L();if(!l){b.innerHTML='<p class="note">Select a layer in the timeline.</p>';return}
+ if(S.tab==='g')return renderGraph(b);
+ let h=`<div class="h">${l.name} · ${l.type.toLowerCase()}</div>`;
+ for(const n in PL){const p=l.props[n],v=+ev(p,S.t).toFixed(2),on=S.sel.prop===n;
+  h+=`<div class="pr ${on?'sel':''}"><button data-sw="${n}" class="${p.anim?'on':''}" title="Animate (keeps keys when off)">⏱</button><label data-pick="${n}">${PL[n]}</label><input type="number" step="any" data-val="${n}" value="${v}"><button data-add="${n}" title="Key at playhead">◆</button><button data-nav="${n}" title="Next key">›</button></div>`}
+ const p=PR(),k=p&&p.keys.find(k=>k.id===S.sel.key);
+ if(k)h+=`<div class="h">Keyframe · ${PL[S.sel.prop]}</div><div class="pr" style="grid-template-columns:1fr 1fr"><label>Time ms</label><input type="number" data-kt value="${Math.round(k.t)}"></div><div class="pr" style="grid-template-columns:1fr 1fr"><label>Value</label><input type="number" step="any" data-kv value="${k.v}"></div><div class="pr" style="grid-template-columns:1fr 1fr 60px"><label>Interpolation</label><select data-ki>${['hold','linear','smooth','bezier'].map(o=>`<option ${k.i===o?'selected':''}>${o}</option>`).join('')}</select><button data-kd>Delete</button></div>`;
+ h+=`<div class="note">Planned, not built: effects stack, plugins, audio, text styling, media import, export.</div>`;b.innerHTML=h}
+$('#sidebody').addEventListener('click',e=>{const t=e.target,d=t.dataset,l=L(),p=PR();
+ if(d.pick){S.sel.prop=d.pick;S.sel.key=null;return renderAll()}
+ if(d.sw){begin();const q=l.props[d.sw];q.anim=!q.anim;if(q.anim&&!q.keys.length)setKey(q,sn(S.t),q.v);S.sel.prop=d.sw;return renderAll()}
+ if(d.add){begin();const q=l.props[d.add];setKey(q,sn(S.t),ev(q,S.t));S.sel.prop=d.add;S.sel.key=q.keys.find(k=>k.t===sn(S.t)).id;return renderAll()}
+ if(d.nav){const q=l.props[d.nav],k=q.keys.find(k=>k.t>S.t+1);if(k){S.t=k.t;S.sel.prop=d.nav;S.sel.key=k.id;renderAll()}return}
+ if(d.kd!==undefined){begin();p.keys=p.keys.filter(k=>k.id!==S.sel.key);S.sel.key=null;renderAll()}
+ if(d.reset!==undefined){begin();const k=segment().a;if(k)k.i='linear';renderAll()}});
+$('#sidebody').addEventListener('change',e=>{const d=e.target.dataset,l=L(),p=PR(),v=e.target.value;
+ if(d.val){begin();const q=l.props[d.val];q.anim?setKey(q,sn(S.t),+v):q.v=+v;return renderAll()}
+ const k=p&&p.keys.find(k=>k.id===S.sel.key);if(!k)return;begin();
+ if(d.kt!==undefined){k.t=clamp(sn(+v),0,DUR);p.keys=p.keys.filter(o=>o===k||o.t!==k.t);p.keys.sort((a,b)=>a.t-b.t)}
+ if(d.kv!==undefined)k.v=+v; if(d.ki!==undefined)k.i=v; renderAll()});
+
+/* ---- graph editor ---- */
+function segment(){const p=PR();if(!p||p.keys.length<2)return{};let i=p.keys.findIndex(k=>k.id===S.sel.key);if(i<0)i=0;if(i>=p.keys.length-1)i=p.keys.length-2;return{a:p.keys[i],b:p.keys[i+1],p}}
+function gmap(p){const vs=p.keys.map(k=>k.v),lo=Math.min(...vs),hi=Math.max(...vs),pad=(hi-lo||1)*.2,a=lo-pad,b=hi+pad;return{X:t=>20+t/DUR*360,Y:v=>190-(v-a)/(b-a)*170,iX:x=>(x-20)/360*DUR,iY:y=>a+(190-y)/170*(b-a)}}
+function renderGraph(b){const p=PR();let h=`<div class="h">${PL[S.sel.prop]||''} · value curve</div>`;
+ if(!p||p.keys.length<2||!p.anim){b.innerHTML=h+'<p class="note" style="border:0">Turn on ⏱ and add at least two keyframes. Pick a keyframe, then set interpolation to bezier and drag its handles.</p>';return}
+ const m=gmap(p),{a,b:bk}=segment();let d='';for(let t=0;t<=DUR;t+=40)d+=(t?'L':'M')+m.X(t).toFixed(1)+' '+m.Y(ev(p,t)).toFixed(1);
+ const dt=bk.t-a.t,dv=(bk.v-a.v)||1,o=[m.X(a.t+a.ox*dt),m.Y(a.v+a.oy*dv)],n=[m.X(a.t+bk.ix*dt),m.Y(a.v+bk.iy*dv)];
+ h+=`<svg id="graph" viewBox="0 0 400 210" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="#a855f7" stroke-width="2" vector-effect="non-scaling-stroke"/>
+ <line x1="${m.X(S.t)}" x2="${m.X(S.t)}" y1="0" y2="210" stroke="#38bdf8" vector-effect="non-scaling-stroke"/>
+ ${p.keys.map(k=>`<rect x="${m.X(k.t)-4}" y="${m.Y(k.v)-4}" width="8" height="8" fill="${k.id===S.sel.key?'#38bdf8':'#fbbf24'}" transform="rotate(45 ${m.X(k.t)} ${m.Y(k.v)})"/>`).join('')}
+ <line x1="${m.X(a.t)}" y1="${m.Y(a.v)}" x2="${o[0]}" y2="${o[1]}" stroke="#8f84ab"/><line x1="${m.X(bk.t)}" y1="${m.Y(bk.v)}" x2="${n[0]}" y2="${n[1]}" stroke="#8f84ab"/>
+ <circle data-h="o" cx="${o[0]}" cy="${o[1]}" r="6" fill="#38bdf8"/><circle data-h="i" cx="${n[0]}" cy="${n[1]}" r="6" fill="#38bdf8"/></svg>
+ <div class="pr" style="grid-template-columns:1fr auto;margin-top:8px"><span style="color:var(--mu)">Segment ${Math.round(a.t)}–${Math.round(bk.t)} ms: ${a.i}</span><button data-reset>Linear</button></div>`;
+ b.innerHTML=h;$('#graph').addEventListener('pointerdown',e=>{const w=e.target.dataset.h;if(!w)return;begin();a.i='bezier';
+  drag(e,mv=>{const r=$('#graph').getBoundingClientRect(),x=(mv.clientX-r.left)/r.width*400,y=(mv.clientY-r.top)/r.height*210,fx=clamp((m.iX(x)-a.t)/dt,0,1),fy=(m.iY(y)-a.v)/dv;
+   if(w==='o'){a.ox=fx;a.oy=fy}else{bk.ix=fx;bk.iy=fy}draw();renderGraph($('#sidebody'))})})}
+
+/* ---- toolbar, playback, undo ---- */
+function renderAll(){renderTL();renderSide();draw();$('#undo').disabled=!undo.length;$('#redo').disabled=!redo.length;
+ const s=$('#save');s.textContent=S.dirty?'Unsaved (memory only)':'Saved';s.className='save '+(S.dirty?'dirty':'ok');
+ const l=L();$('#status').textContent=S.sel.key?'Keyframe selected':S.sel.clip?'Clip selected':l?'Layer: '+l.name:''}
+$('#undo').onclick=()=>{if(undo.length){redo.push(snap());applySnap(undo.pop());renderAll()}};
+$('#redo').onclick=()=>{if(redo.length){undo.push(snap());applySnap(redo.pop());renderAll()}};
+$('#split').onclick=()=>{const l=L();if(!l||l.locked)return;const t=sn(S.t),c=l.clips.find(c=>t>c.start&&t<c.start+c.dur&&(!S.sel.clip||c.id===S.sel.clip));if(!c)return;begin();
+ const b={id:nid(),start:t,dur:c.start+c.dur-t,src:c.src+(t-c.start)};c.dur=t-c.start;l.clips.splice(l.clips.indexOf(c)+1,0,b);S.sel.clip=b.id;renderAll()};
+$('#dup').onclick=()=>{const l=L(),c=l&&l.clips.find(c=>c.id===S.sel.clip);if(!c||l.locked)return;begin();l.clips.push({...c,id:nid(),start:clamp(c.start+c.dur,0,DUR-c.dur)});renderAll()};
+$('#del').onclick=()=>{const l=L();if(!l||l.locked)return;const p=PR();begin();
+ if(S.sel.key&&p){p.keys=p.keys.filter(k=>k.id!==S.sel.key);S.sel.key=null}else if(S.sel.clip){l.clips=l.clips.filter(c=>c.id!==S.sel.clip);S.sel.clip=null}renderAll()};
+const step=n=>{S.t=clamp(sn(S.t+n*FM),0,DUR);movePH();draw();if(S.tab==='p')renderSide()};
+$('#prev').onclick=()=>step(-1);$('#next').onclick=()=>step(1);$('#start').onclick=()=>{S.t=0;step(0)};$('#end').onclick=()=>{S.t=DUR;step(0)};
+let last=0;function loop(ts){if(!S.playing)return;S.t+=ts-last;last=ts;if(S.t>=DUR)S.t=0;movePH();draw();requestAnimationFrame(loop)}
+$('#play').onclick=()=>{S.playing=!S.playing;$('#play').textContent=S.playing?'Pause':'Play';if(S.playing){last=performance.now();requestAnimationFrame(loop)}else{S.t=sn(S.t);renderAll()}};
+$('#zoom').oninput=e=>{ppm=e.target.value/1000;renderTL()};
+$('#fit').onclick=()=>{ppm=Math.max(.02,($('#tl').clientWidth-160)/DUR);$('#zoom').value=Math.round(ppm*1000);renderTL()};
+$('#tp').onclick=()=>{S.tab='p';$('#tp').className='on';$('#tg').className='';renderSide()};
+$('#tg').onclick=()=>{S.tab='g';$('#tg').className='on';$('#tp').className='';renderSide()};
+addEventListener('keydown',e=>{if(/INPUT|SELECT/.test(e.target.tagName))return;if(e.key===' '){e.preventDefault();$('#play').click()}if(e.key==='ArrowLeft')step(-1);if(e.key==='ArrowRight')step(1);if(e.key==='Delete')$('#del').click()});
+// demo animation so the graph has something to show
+{const p=S.layers[1].props.x;setKey(p,0,200,'bezier');setKey(p,3000,760);p.keys[0].ox=.7;p.keys[0].oy=0;p.keys[1].ix=.3;p.keys[1].iy=1;
+ const o=S.layers[0].props.op;setKey(o,500,0,'linear');setKey(o,1500,100)}
+const sheet=t=>{const d=$('#side');if(d.classList.contains('open')&&S.tab===t){d.classList.remove('open');return}d.classList.add('open');(t==='p'?$('#tp'):$('#tg')).click()};
+$('#tEdit').onclick=()=>sheet('p');$('#tGraph').onclick=()=>sheet('g');
+renderAll();
+</script></body></html>
